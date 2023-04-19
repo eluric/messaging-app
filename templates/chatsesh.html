@@ -1,0 +1,254 @@
+<html> 
+<head>
+    <title>Chatting to ${name}</title>
+    <style>
+        .chat-bubble {
+            display: flex;
+            max-width: 80%;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        .chat-bubble.sent {
+            background-color: #bb84ae;
+            color: white;
+            text-align: right;
+        }
+        
+        .chat-bubble.received {
+            background-color: #37bdbf91;
+            color: black;
+            text-align: left;
+        }
+        
+        .chat-bubble.sent:before {
+            content: "";
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-top: 10px solid transparent;
+            border-left: 20px solid #bb84ae;
+            border-bottom: 10px solid transparent;
+        }
+        
+        .chat-bubble.received:before {
+            content: "";
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-top: 10px solid transparent;
+            border-right: 20px solid #37bdbf91;
+            border-bottom: 10px solid transparent;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chatting to ${name}</h1>
+
+    <div id="chat-messages">
+    </div>
+
+    <form id="chat-form" onsubmit="send_msg(); return false;">
+        <button type="button" onclick="exchange_pks()">Connect</button> 
+        <input type="text" id="message-input" placeholder="Type a message!">
+        <button type="submit">Send</button>
+        <button type="button" onclick="retrieve_msg()">Check inbox</button> 
+    </form>
+    
+    <style>
+        button[onclick="exchange_pks()"] {
+            margin-bottom: 10px;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/0.10.0/forge.min.js"></script>
+
+    <script>
+
+        var shared_secret = '';
+        var pk = ''
+        var added_to_db = false;
+        var other_pk = '';
+        var sk = '';
+
+        function hideButtons() {
+        document.getElementById('message-input').style.display = 'none';
+        document.querySelector('[type="submit"]').style.display = 'none';
+        document.querySelector('[onclick="retrieve_msg()"]').style.display = 'none';
+        }
+
+        // Function to show buttons when Connect button is pressed
+        function showButtons() {
+            document.getElementById('message-input').style.display = 'block';
+            document.querySelector('[type="submit"]').style.display = 'inline';
+            document.querySelector('[onclick="retrieve_msg()"]').style.display = 'inline';
+            document.querySelector('[onclick="exchange_pks()"]').style.display = 'none';
+        }
+
+        async function exchange_pks() {
+            // Generate kp
+            if (!added_to_db) {
+                const algorithm = { name: 'ECDH', namedCurve: 'P-256' };
+                const kp = await crypto.subtle.generateKey(algorithm, true, ['deriveKey']);
+                const pk_buffer = await crypto.subtle.exportKey('raw', kp.publicKey);
+                const pk_arr = new Uint8Array(pk_buffer);
+                sk = kp.privateKey;
+                pk = btoa(String.fromCharCode.apply(null, pk_arr));
+                added_to_db = true;
+            } 
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/send_pk");
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log(xhr.responseText);
+                }
+            };
+            xhr.send(JSON.stringify({pk: pk})); // Send generated pk
+
+            var xhr_getpk = new XMLHttpRequest();
+            xhr_getpk.open("POST", "/get_pk");
+            xhr_getpk.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr_getpk.onload = async function() {
+                    if (xhr_getpk.status === 200) {
+                        var response = JSON.parse(xhr_getpk.responseText);
+                        response_other_pk = response.other_pk;
+                        // Receiving response, i.e. other party's pk
+                        if (!response_other_pk) {
+                            setTimeout(exchange_pks, 1000); // ping server until response is not null (other user connects)
+                        }
+                        if (response_other_pk) {
+                            other_pk = response_other_pk[0];
+
+                            // Converting to cryptoKey 
+                            const base64_other_pk = other_pk.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+                            const binary_str = atob(base64_other_pk);
+                            const other_pk_arr = new Uint8Array(binary_str.length);
+                            for (let i = 0; i < binary_str.length; i++) {
+                                other_pk_arr[i] = binary_str.charCodeAt(i);
+                            }
+                            const other_pk_key = await crypto.subtle.importKey(
+                                        'raw',
+                                        other_pk_arr,
+                                        {
+                                            name: 'ECDH',
+                                            namedCurve: 'P-256'
+                                        },
+                                        true,
+                                        [] 
+                                        );
+                            
+                            // Compute shared secret
+                            shared_secret = await crypto.subtle.deriveKey({ name: 'ECDH', public: other_pk_key }, 
+                            sk, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+                        }
+                        
+                    }
+                };
+
+            // Sending username just to store username with pk in db
+            var urlParams = new URLSearchParams(window.location.search);
+            var username = urlParams.get("uname");
+            xhr_getpk.send(JSON.stringify({chatting_to: username}));
+            showButtons();
+        }
+
+
+
+        async function send_msg() {
+            // Messages show up on screen
+            var message = document.getElementById("message-input").value;
+            var chatMessages = document.getElementById("chat-messages");
+            var messageElement = document.createElement("div");
+            messageElement.classList.add("chat-bubble");
+            messageElement.classList.add("sent");
+            messageElement.innerText = message;
+            chatMessages.appendChild(messageElement);
+            document.getElementById("message-input").value = "";
+
+            // Send out a message to server
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/send_msg");
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log(xhr.responseText);
+                }
+            };
+
+            // Encrypting message 
+            const plaintext = new TextEncoder().encode(message);
+            const iv = crypto.getRandomValues(new Uint8Array(12)); // Generate a random IV (Initialization Vector)
+            const enc_msg = await crypto.subtle.encrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv,
+                },
+                shared_secret,
+                plaintext
+            );
+            const enc_datarr = new Uint8Array(enc_msg);
+            const enc_msg_str = btoa(String.fromCharCode(...enc_datarr));
+            const iv_encoded = btoa(String.fromCharCode.apply(null, iv));
+
+            // Send all info to server
+            var urlParams = new URLSearchParams(window.location.search);
+            var username = urlParams.get("uname");
+            var recipient = "${name}";
+            xhr.send(JSON.stringify({
+                message: enc_msg_str,
+                uname: username,
+                recipient: recipient,
+                iv: iv_encoded}));
+        }
+
+        async function retrieve_msg() {
+            // Receive ciphertext from server
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/get_msg");
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log(xhr.responseText);
+                    var response = JSON.parse(xhr.responseText);
+                    get_msg(response.message, response.iv);
+                }
+            };
+            xhr.send();
+        }
+
+        async function get_msg(message, iv) {
+        if (message && iv) { // If user has messages in inbox
+            // Decrypt the ciphertext
+            const enc_msg_arr = Uint8Array.from(atob(message), c => c.charCodeAt(0)).buffer;
+            const iv_arr = new Uint8Array(atob(iv).split('').map((c) => c.charCodeAt(0)));
+            const dec_dat = await crypto.subtle.decrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv_arr,
+                },
+                shared_secret,
+                enc_msg_arr
+            );
+            const dec_msg = new TextDecoder().decode(dec_dat);
+
+            // Append decrypted message to screen for receiver to see
+            var chatMessages = document.getElementById("chat-messages");
+            var messageElement = document.createElement("div");
+            messageElement.classList.add("chat-bubble");
+            messageElement.classList.add("received");
+            messageElement.innerText = dec_msg;
+            chatMessages.appendChild(messageElement);
+
+        }
+    }
+    window.onload = hideButtons;
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,36 @@
+<form action="/login" method="post" onsubmit="hash_pwd()">
+    <center>
+      <p>
+        Username: <input name="username" type="text" />
+      </p>
+      <p>
+        Password: <input name="password" id="pwd_input" type="password" />
+      </p>
+      <p>
+        <input value="Login" type="submit" />
+      </p>
+    </center>
+  </form>
+  
+  <script>
+  function hash_pwd() {
+    const pwd_input = document.getElementById("pwd_input");
+    const password = pwd_input.value;
+  
+    const encoder = new TextEncoder();
+    const data_buff = encoder.encode(password);
+    crypto.subtle.digest("SHA-256", data_buff)
+      .then(hash_arr_buff => {
+
+        const hash_arr = Array.from(new Uint8Array(hash_arr_buff));
+        const hash_hex = hash_arr.map(b => b.toString(16).padStart(2, '0')).join('');
+        pwd_input.value = hash_hex;
+        pwd_input.form.submit();
+      })
+      .catch(error => {
+        console.error(`Error hashing password: ${error}`);
+      });
+    return false;
+  }
+  </script>
+  

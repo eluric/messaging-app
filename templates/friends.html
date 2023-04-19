@@ -1,0 +1,33 @@
+<head>
+    <style>
+        #friends-list {
+            margin: 1;
+            padding: 1;
+            overflow: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Friends</h1>
+    <ul id="friends-list">
+    </ul>
+
+    <script>
+        const friends = "${friends}";
+        const friendsArr = friends.split(",");
+
+        console.log(friendsArr);
+
+        const friendsList = document.getElementById("friends-list");
+        for (let i = 0; i < friendsArr.length; i ++) {
+            elemA = document.createElement("a");
+            elemA.appendChild(document.createTextNode(friendsArr[i]));
+            elemA.href = "/chatsesh?uname=" + friendsArr[i];
+
+            elemLi = document.createElement("li");
+            elemLi.appendChild(elemA);
+
+            friendsList.appendChild(elemLi);
+        }
+    </script>
+</body>

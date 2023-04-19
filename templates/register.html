@@ -1,0 +1,49 @@
+    <p id="error-msg" style="color: red;"></p>
+<p>
+<form action="/register" method="post" onsubmit="return hashPassword()">
+    Username: <input name="Username" type="text" />
+</br>
+    Password: <input id="pwd_input" name="Password" type="password" />
+</br>
+    <input value="Register" type="submit" />
+</form>
+</p>
+
+<script>
+function hashPassword() {
+    const pwd_input = document.getElementById("pwd_input");
+    const password = pwd_input.value;
+
+    if (password.length < 8) {
+        document.getElementById("error-msg").textContent = "Your password should be at least 8 characters long.";
+        return false;
+    }
+
+    const regex_upper = /[A-Z]/;
+    const regex_lower = /[a-z]/;
+    const regex_digit = /[0-9]/;
+    const regex_special = /[!@#$%^&*(),.?":{}|<>]/;
+
+    if (!regex_upper.test(password) || !regex_upper.test(password) ||
+        !regex_digit.test(password) || !regex_special.test(password)) {
+        document.getElementById("error-msg").textContent = "Your password should contain at least one one digit, one uppercase letter, one lowercase letter, and one special character.";
+        return false;
+    }
+
+    // Hash password using SHA-256
+    const encoder = new TextEncoder();
+    const data_buff = encoder.encode(password);
+    crypto.subtle.digest("SHA-256", data_buff)
+        .then(hash_arr_buff => {
+            const hash_arr = Array.from(new Uint8Array(hash_arr_buff));
+            const hash_hex = hash_arr.map(b => b.toString(16).padStart(2, '0')).join('');
+            pwd_input.value = hash_hex;
+            pwd_input.form.submit();
+        })
+        .catch(error => {
+            console.error(`Error hashing password: ${error}`);
+        });
+
+    return false;
+}
+</script>
