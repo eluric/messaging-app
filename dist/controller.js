@@ -5,24 +5,30 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const fs_1 = require("fs");
-const https_1 = __importDefault(require("https"));
-const app = (0, express_1.default)();
-app.get('/', (request, response) => {
-    const page = (0, fs_1.readFile)('templates/header.html', (err, html) => {
+const templatePath = "./static/templates";
+const router = express_1.default.Router();
+const readHTMLFile = (filename) => {
+    let data = "";
+    (0, fs_1.readFile)(filename, (err, html) => {
         if (err) {
-            response.status(500).send("Read failed.");
+            console.error(err);
+            return;
         }
-        response.setHeader('Content-Type', 'text/html');
-        response.send(html);
+        data = html.toString();
+        return;
     });
-});
-const options = {
-    passphrase: "1111",
-    key: (0, fs_1.readFileSync)("./certs/myCA.key"),
-    cert: (0, fs_1.readFileSync)("./certs/myCA.pem")
+    return data;
 };
-// app.listen(443, () => console.log("App available on http://localhost:443"));
-const server = https_1.default.createServer(options, app);
-server.listen(443, '127.0.0.1', () => {
-    console.log("Server listening on port 443.");
-});
+const homePage = (request, response) => {
+    const header = readHTMLFile(`${templatePath}/header.html`);
+    const body = readHTMLFile(`${templatePath}/index.html`);
+    const tail = readHTMLFile(`${templatePath}/tailer.html`);
+    console.log(header);
+    console.log(body);
+    console.log(tail);
+    response.setHeader("Content-Type", "text/html");
+    response.send(`${header}${body}${tail}`);
+};
+router.get('/', homePage);
+router.get('/home');
+exports.default = router;

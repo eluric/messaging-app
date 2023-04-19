@@ -1,28 +1,39 @@
 import express, { Response, Request } from 'express';
-import { readFile, readFileSync } from 'fs';
-import https from 'https';
+import fs, { readFile } from 'fs';
 
-const app = express();
+const templatePath = "./static/templates"
 
-app.get('/', (request: Request, response: Response) => {
-    const page = readFile('templates/header.html', (err, html) => {
+const router = express.Router();
+
+const readHTMLFile = (filename: string): string => {
+    let data = "";
+    readFile(filename, (err, html) => {
         if (err) {
-            response.status(500).send("Read failed.");
-        }
+            console.error(err);
+            return;
+        } 
 
-        response.setHeader('Content-Type', 'text/html');
-        response.send(html);
-    });
-});
+        data = html.toString();
+        return;
+    })
 
-const options = {
-    passphrase: "1111",
-    key: readFileSync("./certs/myCA.key"),
-    cert: readFileSync("./certs/myCA.pem")
+    return data;
+}
+
+const homePage = (request: Request, response: Response) => {
+    const header = readHTMLFile(`${templatePath}/header.html`)
+    const body = readHTMLFile(`${templatePath}/index.html`);
+    const tail = readHTMLFile(`${templatePath}/tailer.html`);
+
+    console.log(header);
+    console.log(body);
+    console.log(tail);
+
+    response.setHeader("Content-Type", "text/html");
+    response.send(`${header}${body}${tail}`);
 };
 
-const server = https.createServer(options, app)
+router.get('/', homePage);
+router.get('/home');
 
-server.listen(443, '127.0.0.1', () => {
-    console.log("Server listening on port 443.");
-});
+export default router;
