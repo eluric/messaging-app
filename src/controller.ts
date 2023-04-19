@@ -21,7 +21,6 @@ const options = {
     cert: readFileSync("./certs/myCA.pem")
 };
 
-// app.listen(443, () => console.log("App available on http://localhost:443"));
 const server = https.createServer(options, app)
 
 server.listen(443, '127.0.0.1', () => {
