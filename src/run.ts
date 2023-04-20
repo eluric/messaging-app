@@ -9,9 +9,8 @@ const port = 443;
 app.use('/', router);
 
 const options = {
-    passphrase: "1111",
-    key: readFileSync("./certs/myCA.key"),
-    cert: readFileSync("./certs/myCA.pem")
+    key: readFileSync("./certs/INFO2222.test.key"),
+    cert: readFileSync("./certs/INFO2222.test.crt")
 }
 
 const server = https.createServer(options, app);
