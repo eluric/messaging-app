@@ -16,5 +16,5 @@ const options = {
 const server = https.createServer(options, app);
 
 server.listen(port, '127.0.01', () => {
-    console.log("Server listening on 127.0.0.1:443");
+    console.log("Server listening on https://127.0.0.1:443");
 });

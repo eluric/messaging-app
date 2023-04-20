@@ -14,21 +14,23 @@ const readHTMLFile = (filename) => {
             console.error(err);
             return;
         }
+        console.log(html.toString());
         data = html.toString();
-        return;
+        console.log(data);
     });
     return data;
 };
 const homePage = (request, response) => {
-    const header = readHTMLFile(`${templatePath}/header.html`);
-    const body = readHTMLFile(`${templatePath}/index.html`);
-    const tail = readHTMLFile(`${templatePath}/tailer.html`);
-    console.log(header);
-    console.log(body);
-    console.log(tail);
+    // const header = readHTMLFile(`${templatePath}/header.html`);
+    // const body = readHTMLFile(`${templatePath}/index.html`);
+    // const tail = readHTMLFile(`${templatePath}/tailer.html`);
+    const header = (0, fs_1.readFileSync)(`${templatePath}/header.html`).toString();
+    const body = (0, fs_1.readFileSync)(`${templatePath}/index.html`).toString();
+    const tail = (0, fs_1.readFileSync)(`${templatePath}/tailer.html`).toString();
     response.setHeader("Content-Type", "text/html");
-    response.send(`${header}${body}${tail}`);
+    response.send(`${header}${body}`);
+    response.end(tail);
 };
 router.get('/', homePage);
-router.get('/home');
+router.get('/home', homePage);
 exports.default = router;
