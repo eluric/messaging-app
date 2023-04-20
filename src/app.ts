@@ -7,6 +7,7 @@ const app = express();
 const port = 443;
 
 app.use(express.static('public'));
+app.set('view engine', 'ejs');
 app.use('/', router);
 
 const options = {

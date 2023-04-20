@@ -9,6 +9,8 @@ const controller_1 = __importDefault(require("./controller"));
 const https_1 = __importDefault(require("https"));
 const app = (0, express_1.default)();
 const port = 443;
+app.use(express_1.default.static('public'));
+app.set('view engine', 'ejs');
 app.use('/', controller_1.default);
 const options = {
     key: (0, fs_1.readFileSync)("./certs/INFO2222.test.key"),
