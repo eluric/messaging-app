@@ -1,0 +1,22 @@
+<%- include('./partials/header.ejs') %>
+
+<body>
+    <%= nav %>
+
+    <p>
+        <%= errorMessage %>
+    </p>
+    <form action="/register" method="post" onsubmit="return hashPassword()">
+        Username: <input name="Username" type="text" />
+    </br>
+        Password: <input id="pwd_input" name="Password" type="password" />
+    </br>
+        <input value="Register" type="submit" />
+    </form>
+
+    <script>
+        function hashPassword() {
+            return "";
+        }
+    </script>
+</body>
