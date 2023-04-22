@@ -1,0 +1,19 @@
+<%- include('./partials/header.ejs') %>
+
+<body>
+    <%- include('./partials/nav.ejs') %>
+
+    <p>
+        This username-password combination is valid! Welcome back, <%= username %>
+    </p>
+
+    <h1>
+        <%= username %>'s Chat Session
+    </h1>
+
+    <form action="/valid" method="POST">
+        <label for="message">Today I want to talk to:</label>
+        <input type="text" id="uname" name="uname">
+        <button type="submit">Send</button>
+    </form>
+</body>
