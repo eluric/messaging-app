@@ -1,0 +1,25 @@
+<%- include('./partials/header.ejs') %>
+
+<body>
+    <%- include('./partials/nav.ejs') %>
+
+    <form action="/login" onsubmit="hash_pwd()">
+        <center>
+            <p>
+                Username: <input name="username" type="text" />
+            </p>
+            <p>
+                Password: <input name="password" id="pwd_input" type="password" />
+            </p>
+            <p>
+                <input value="Login" type="submit" />
+            </p>
+        </center>
+    </form>
+
+    <script>
+        function hash_pwd() {
+            return true;
+        }
+    </script>
+</body>
